@@ -483,33 +483,46 @@ class Log extends CommonDBTM {
                   }
                   $tmp['change'] = sprintf(__('%1$s: %2$s'), __('Add a link with an item'),
                                            $data["new_value"]);
-              
-                  if ($data['itemtype'] == 'Ticket') {
-                     if ($data['itemtype_link'] == 'Group') {
-                        $itemtick = new Group_Ticket();
-                     } else if ($data['itemtype_link'] == 'User') {
-                        $itemtick = new Ticket_User();
-                     } else if ($data['itemtype_link'] == 'Supplier') {
-                        $itemtick = new Supplier_Ticket();
-                     }
-                     $table   = $itemtick->getTable();
-                     $key     = getForeignKeyFieldForItemType($data['itemtype']);
-                     $itemkey = getForeignKeyFieldForItemType($data['itemtype_link']);
-                     $iditem  = trim(substr($data['new_value'], strrpos($data['new_value'], '(')+1,
-                                     strrpos($data['new_value'], ')')),')');
 
-                     foreach($DB->request($table, array($key => $data['items_id'],
-                                                        $itemkey => $iditem)) as $datalink) {
-                        if ($datalink['type'] == CommonITILActor::REQUESTER) {
-                           $as = __('Requester');
-                        } else if ($datalink['type'] == CommonITILActor::ASSIGN) {
-                           $as = __('Assigned to');
-                        } else if ($datalink['type'] == CommonITILActor::OBSERVER) {
-                           $as = __('Watcher');
+                  if ($data['itemtype'] == 'Ticket') {
+                     switch ($data['itemtype_link']) {
+                        case 'Group':
+                           $itemtick = new Group_Ticket();
+                           break;
+
+                        case 'User':
+                           $itemtick = new Ticket_User();
+                           break;
+
+                        case 'Supplier':
+                           $itemtick = new Supplier_Ticket();
+                           break;
+
+                        default:
+                           $itemtick = false;
+                           break;
+                     }
+
+                     if ($itemtick !== false) {
+                        $table   = $itemtick->getTable();
+                        $key     = getForeignKeyFieldForItemType($data['itemtype']);
+                        $itemkey = getForeignKeyFieldForItemType($data['itemtype_link']);
+                        $iditem  = trim(substr($data['new_value'], strrpos($data['new_value'], '(')+1,
+                                        strrpos($data['new_value'], ')')),')');
+
+                        foreach($DB->request($table, array($key => $data['items_id'],
+                                                           $itemkey => $iditem)) as $datalink) {
+                           if ($datalink['type'] == CommonITILActor::REQUESTER) {
+                              $as = __('Requester');
+                           } else if ($datalink['type'] == CommonITILActor::ASSIGN) {
+                              $as = __('Assigned to');
+                           } else if ($datalink['type'] == CommonITILActor::OBSERVER) {
+                              $as = __('Watcher');
+                           }
+                           $tmp['change'] = sprintf(__('%1$s: %2$s'), __('Add a link with an item'),
+                                                    sprintf(__('%1$s (%2$s)'), $data["new_value"],
+                                                           $as));
                         }
-                        $tmp['change'] = sprintf(__('%1$s: %2$s'), __('Add a link with an item'),
-                                                 sprintf(__('%1$s (%2$s)'), $data["new_value"],
-                                                         $as));
                      }
                   }
                   break;
@@ -520,8 +533,8 @@ class Log extends CommonDBTM {
                      $linktype     = $linktype_field[0];
                      $tmp['field'] = $linktype::getTypeName();
                   }
-                  $tmp['change'] = sprintf(__('%1$s: %2$s'), __('Update a link with an item'), 
-                                       sprintf(__('%1$s (%2$s)'), $data["old_value"], 
+                  $tmp['change'] = sprintf(__('%1$s: %2$s'), __('Update a link with an item'),
+                                       sprintf(__('%1$s (%2$s)'), $data["old_value"],
                                           $data["new_value"]));
                   break;
 
